@@ -99,22 +99,23 @@ static CGFloat minVolume                    = 0.00001f;
     self.isStarted = YES;
 
     NSError *error = nil;
-    self.session = [AVAudioSession sharedInstance];
-    // this must be done before calling setCategory or else the initial volume is reset
-    [self setInitialVolume];
-    [self.session setCategory:_sessionCategory
-                  withOptions:_sessionOptions
-                        error:&error];
-    if (error) {
-        NSLog(@"%@", error);
-        return;
+    if (!self.session) {
+        self.session = [AVAudioSession sharedInstance];
+        // this must be done before calling setCategory or else the initial volume is reset
+        [self setInitialVolume];
+        [self.session setCategory:_sessionCategory
+                      withOptions:_sessionOptions
+                            error:&error];
+        if (error) {
+            NSLog(@"%@", error);
+            return;
+        }
+        [self.session setActive:YES error:&error];
+        if (error) {
+            NSLog(@"%@", error);
+            return;
+        }
     }
-    [self.session setActive:YES error:&error];
-    if (error) {
-        NSLog(@"%@", error);
-        return;
-    }
-
     // Observe outputVolume
     [self.session addObserver:self
                    forKeyPath:sessionVolumeKeyPath
@@ -189,11 +190,14 @@ static CGFloat minVolume                    = 0.00001f;
 
 #pragma mark - Convenience
 
-+ (instancetype)volumeButtonHandlerWithUpBlock:(JPSVolumeButtonBlock)upBlock downBlock:(JPSVolumeButtonBlock)downBlock {
++ (instancetype)volumeButtonHandlerWithSession:(AVAudioSession *) session
+                                       upBlock:(JPSVolumeButtonBlock)upBlock
+                                     downBlock:(JPSVolumeButtonBlock)downBlock {
     JPSVolumeButtonHandler *instance = [[JPSVolumeButtonHandler alloc] init];
     if (instance) {
         instance.upBlock = upBlock;
         instance.downBlock = downBlock;
+        instance.session = session;
     }
     return instance;
 }
